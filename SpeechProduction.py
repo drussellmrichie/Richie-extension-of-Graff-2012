@@ -65,6 +65,7 @@ import numpy.random
 import random, os #, itertools
 import networkx as nx
 import matplotlib.pyplot as plt
+#import pygraphviz as pgv # pygraphviz should be available
 
 os.chdir('/Users/russellrichie/Google Drive/UConn/Classes/DLC (II)')
 
@@ -84,7 +85,7 @@ phonemeSetLength = 8 # setting this to 25 includes all phonemes
                       # note that because I've outlawed any homophones,
                       # conceptCount must < phonemeSetLength choose word lengths
 
-nGens = 10       # the number of generations to be simulated
+nGens = 1       # the number of generations to be simulated
 
 initAct = 100   # the initial activation of the concept to be expressed
 
@@ -188,21 +189,35 @@ for currGen in range(nGens):
                 netInputs = sumInputs(curreWeights, neighborInputs)    # how do I deal with different weights, esp between words???
                 phGraph1.node[currNode]['activation'] = newActivation(nWeights, phGraph0.node[currNode]['activation'], netInputs, decay)   # how do I deal with different weights, esp between words???
             phGraph0 = phGraph1.copy() # and with the end of this timestep, time 1 is now time 0!
+            
             """
-            # Some incomplete code to try to plot the network and its nodes' activations at each time step
+            # Some code to try to plot the network and its nodes' activations at each time step
+            # I can't get it to work because I'm having import problems! My Canopy python doesn't 
+            # recognize pygraphviz and my default python in terminal doesn't recognize 
+            # matplotlib.pyplot !!!! Would really love to get this sorted.
+            
             A = nx.to_agraph(phGraph0)
             three = A.add_subgraph(range(conceptCount),rank='same')
             two = A.add_subgraph(wordList,rank='same')
             one = A.add_subgraph(phonemes,rank='same')
             zero = A.add_subgraph(list(distFeatData[0][1:]),rank='same')
-            filename = 'network architecture time{}.png'.format(currStep)
-            nx.draw_networkx_nodes(A,pos,
-                       nodelist=[0,1,2,3],
-                       node_color='r',
+            
+            activations = [0] * len(phGraph0)
+            for index, currNode in enumerate(phGraph0):
+                activations[index] = phGraph0.node[currNode]['activation']
+
+            pos=nx.graphviz_layout(phGraph0,prog='dot')
+
+            nx.draw_networkx_nodes(A,
+                       pos,
+                       node_color= activations, # not sure if I have to convert activations to points on some color scale
                        node_size=500,
                         alpha=0.8)
+                        
+            filename = 'network architecture time{}.png'.format(currStep)
             A.draw(filename, prog='dot')
             """
+            
         # Let's see if the right word(s) were activated....
                 
         print "Target word was {} or {}".format(phGraph1.neighbors(currCon)[0],phGraph1.neighbors(currCon)[1])
@@ -255,7 +270,8 @@ for currGen in range(nGens):
     
     # I'll then want to either record the number of minimal pairs for each 
     # contrast, or the average similarity between words by *features*???
-    
+
+"""    
 plt.plot(diffList)  # see how the average similarity between words changed over
                     # simulation
 plt.suptitle('Average similarity does not change over generations', fontsize=30)
@@ -264,3 +280,4 @@ plt.ylabel('Average similarity between words', fontsize=24)
 
 #plt.plot(minPairCount)
 plt.show()
+"""
