@@ -246,6 +246,7 @@ for currGen in range(nGens):
                         alpha =0.9)                                                                                                                                                                                    
             """
             plt.clf() # in case it wasn't already closed before??
+            
             nx.draw_networkx_nodes(phGraph0,
                        pos,
                        node_color= activations, # not sure if I have to convert activations to points on some color scale
@@ -254,8 +255,16 @@ for currGen in range(nGens):
                        alpha=0.9)
             nx.draw_networkx_labels(phGraph0,
                        pos)
+                       
+            edges = phGraph0.edges()
+            pltEdges = []
+            for edge in edges:
+                if type(edge[0]) != frozenset or type(edge[1]) != frozenset:
+                    pltEdges.append(edge)
+                       
             nx.draw_networkx_edges(phGraph0,
                        pos,
+                       edgelist=pltEdges,
                        alpha = .9)
                                    
             filename = 'net acts gen= {} con= {} t= {}.png'.format(currGen, currCon, currStep)
