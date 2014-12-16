@@ -62,18 +62,18 @@ Getting double linkage between words because of the way the loop is built.
 from numpy import genfromtxt
 import numpy as np
 import numpy.random
+from numpy import array
 import random, os #, itertools
 import networkx as nx
 import matplotlib.pyplot as plt
-#import pygraphviz as pgv # pygraphviz should be available
 
-os.chdir('/Users/russellrichie/Google Drive/UConn/Classes/DLC (II)')
+os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension-of-Graff-2012')
 
 # Set some parameters
 
 conceptCount = 10 # do we need more concepts and hence words so that the 
                   # word-form space is a bit more crowded and hence we might find
-                  # anti-minimal pair effects?
+                  # anti-minimal pair effects?                  
 
 wordLengths = 3   # the number of phonemes in a word. problem with setting this
                   # low (and making minimal pairs more likely) is that it makes 
@@ -85,7 +85,7 @@ phonemeSetLength = 8 # setting this to 25 includes all phonemes
                       # note that because I've outlawed any homophones,
                       # conceptCount must < phonemeSetLength choose word lengths
 
-nGens = 1       # the number of generations to be simulated
+nGens = 2       # the number of generations to be simulated
 
 initAct = 100   # the initial activation of the concept to be expressed
 
@@ -98,7 +98,7 @@ nWeights = 1    # eWeights is edge weights, which in footnote 11 Martin says he
                 # I am leaving at 1, also consistent with Martin on page 35
 decay = 0.6     # decay rate
 
-settleTime = 100  # how many 'round-trips' in the network does this allow? Martin allowed
+settleTime = 10  # how many 'round-trips' in the network does this allow? Martin allowed
                 # activation to spread for 5 time-steps, which is reportedly enough time
                 # for type frequency effects in Dell and Gordon (2003) to affect lexical
                 # nodes
@@ -157,6 +157,40 @@ for phoind, phoneme in enumerate(phonemes):                                     
 diffList = [] # this will keep track of the average similarity among words 
               # at each generation
 
+# change dir so network activation diagrams are saved in the right place
+os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension-of-Graff-2012/network activation diagrams')
+
+# creating layered positioning for nodes...sure feels like a lot of work, but
+# i have no version of python that plays nice with both pygraphviz and matplotlib!!!
+
+featureY = 0
+phonemeY = 2
+wordY    = [3.5, 4.5] * len(wordList) # this will be longer than it needs to be
+conceptY = 6
+
+featureLen = len(distFeatData[0][1:])
+featureX  = range( int(-featureLen/2)    + 0, int(featureLen/2)    + 2 )
+phonemeX  = range( int(-len(phonemes)/2) + 1, int(len(phonemes)/2) + 1 )
+wordX     = range( int(-len(wordList)/2) + 1, int(len(wordList)/2) + 1 )
+conceptX  = range( int(-conceptCount/2)  + 1, int(conceptCount/2)  + 1 )
+
+pos = dict()
+for node in phGraph0:
+    if type(node)    == frozenset:
+            pos[node] = array([wordX.pop() *2, wordY.pop()])
+    elif type(node)  == int:
+            pos[node] = array([conceptX.pop(), conceptY])
+    elif node in distFeatData[0][1:]:
+            pos[node] = array([featureX.pop(), featureY])
+    else:
+            pos[node] = array([phonemeX.pop(), phonemeY])
+
+#nx.draw_networkx(phGraph0,
+#            pos,
+#            node_size= 1000,
+#            cmap = 'hot',
+#            alph =0.8)                                                                                                                                                                                    
+
 # simulate!!!
 for currGen in range(nGens):
     for currCon in range(conceptCount):
@@ -190,33 +224,46 @@ for currGen in range(nGens):
                 phGraph1.node[currNode]['activation'] = newActivation(nWeights, phGraph0.node[currNode]['activation'], netInputs, decay)   # how do I deal with different weights, esp between words???
             phGraph0 = phGraph1.copy() # and with the end of this timestep, time 1 is now time 0!
             
-            """
-            # Some code to try to plot the network and its nodes' activations at each time step
-            # I can't get it to work because I'm having import problems! My Canopy python doesn't 
-            # recognize pygraphviz and my default python in terminal doesn't recognize 
-            # matplotlib.pyplot !!!! Would really love to get this sorted.
             
-            A = nx.to_agraph(phGraph0)
-            three = A.add_subgraph(range(conceptCount),rank='same')
-            two = A.add_subgraph(wordList,rank='same')
-            one = A.add_subgraph(phonemes,rank='same')
-            zero = A.add_subgraph(list(distFeatData[0][1:]),rank='same')
+            # Plot the network and its nodes' activations at each time step
             
             activations = [0] * len(phGraph0)
             for index, currNode in enumerate(phGraph0):
                 activations[index] = phGraph0.node[currNode]['activation']
+            
+            wordX     = range( int(-len(wordList)/2), int(len(wordList)/2) + 2 )
+            wordY    = [3.5, 4.5] * len(wordList) # this will be longer than it needs to be
 
-            pos=nx.graphviz_layout(phGraph0,prog='dot')
-
-            nx.draw_networkx_nodes(A,
+            for node in phGraph0:
+                if type(node)    == frozenset:
+                        pos[node] = array([wordX.pop() *2, wordY.pop()])
+            """
+            nx.draw_networkx(phGraph0,
+                        pos,
+                        node_color = activations,
+                        node_size= 1000,
+                        cmap = 'YlOrRd',
+                        alpha =0.9)                                                                                                                                                                                    
+            """
+            plt.clf() # in case it wasn't already closed before??
+            nx.draw_networkx_nodes(phGraph0,
                        pos,
                        node_color= activations, # not sure if I have to convert activations to points on some color scale
-                       node_size=500,
-                        alpha=0.8)
-                        
-            filename = 'network architecture time{}.png'.format(currStep)
-            A.draw(filename, prog='dot')
-            """
+                       node_size=1000,
+                       cmap = 'YlOrRd',
+                       alpha=0.9)
+            nx.draw_networkx_labels(phGraph0,
+                       pos)
+            nx.draw_networkx_edges(phGraph0,
+                       pos,
+                       alpha = .9)
+                                   
+            filename = 'net acts gen= {} con= {} t= {}.png'.format(currGen, currCon, currStep)
+            fig = plt.gcf()
+            fig.set_size_inches(18.5,10.5)
+            plt.axis('off')
+            plt.savefig(filename,bbox_inches='tight')
+            plt.clf() # close the figure so we don't keep writing on the same fig every iter of loop!
             
         # Let's see if the right word(s) were activated....
                 
