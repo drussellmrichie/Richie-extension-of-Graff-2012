@@ -1057,7 +1057,7 @@ class NeuQuant:
         return a
 
 
-
+"""
 if __name__ == '__main__':
     im = np.zeros((200,200), dtype=np.uint8)
     im[10:30,:] = 100
@@ -1066,3 +1066,9 @@ if __name__ == '__main__':
     
     images = [im*1.0, im*0.8, im*0.6, im*0.4, im*0]
     writeGif('lala3.gif',images, duration=0.5, dither=0)
+"""
+
+if __name__ == '__main__':
+    files = os.listdir('.')
+    images = [Image.open(file) for file in files]    
+    writeGif('animation.gif',images, duration=0.5, dither=0)

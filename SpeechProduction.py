@@ -6,57 +6,8 @@ from __future__ import division
 REIMPLEMENTATION OF MARTIN (2007) / GRAFF (2012) SPREADING ACTIVATION MODEL OF
 SPEECH PRODUCTION
 
-Do I need to let activation feed back up to concept layers? I don't think Martin did. For now, I am.
-
-I should run this in pycharm in debug mode so I can see what's what....
-
-What should (negative) weights between words be? Right now, I just set to -1....? Definitely need to think about how this will work in computation
-of net inputs and new activations, etc. I think it needs to be higher to offset the positive weighted inputs from the phoneme layer...right now
-there is runaway activation....and with greater numbers of concepts and consequently words, the target words never win out in the end!!! And actually,
-the activation appears to even out across all the words as the settling time increases. ALSO ALSO, one synonym doesn't seem to ever 'beat' the 
-other....
-
-Consider restricting set of phonemes and features to make the word space smaller and hence minimal pairs more likely....
-    Think about the minimum number of concepts/words, phonemes, and features to really show the phenomenon....also, the fewer we have, the easier
-    it'd be to manage the TRACE temporal fudge....
-
-Martin footnote 19 Only weights for lexical nodes are given random weights. All other nodes (those for concepts and phonemes) have weights of 1.0.
-
-Also need to figure out exactly how Martin and Graff incremented resting
-activation as a function of phoneme frequency? Is it the same as word-node 
-weight update in Martin on paper page 22? Do I have to update weights or resting
-activation? ACTUALLY, I'M NOT SURE THAT MARTIN DID THIS????
-
-    weights for each node, which is intended to simulate differing resting activations
-    
-    (9) Speaker weight adjustment
-    WS ←WS +α(e−WS ) (10) Listener weight adjustment
-    WL ←WL +β(e−WL )
-
-    I might not need to do this, since Martin and Graff had weights/resting act
-    change to model frequency distributions across phonemes?
-
-Things to consider...how many words? how many characters per word? should I 
-restrict the phoneme set and feature set?
-
-I think I didn't think through the serial order aspect of words. In Martin and
-Graff's models, words were really conceived of as sets of simultaneous phonemes.
-But that doesn't work for us. We can't have the different phonemes simultaneously
-activating their corresponding features. Can I get away with having single-phoneme
-words?
-
-Would we have to do some kind of TRACE fudge where we make a different phoneme
-for each slot, i.e., an esh1, esh2, esh3, etc.? Or, is there some way to activate
-the phonemes sequentially (step through them)? Let activation flow from concept
-down to features and back up to lexical level, then activate next phoneme?
-
-^^^This still matters....11/24/2014....but is it so different than martin/graff's strategy of dealing with words with more than one 'a'?
-
-Might consider taking the triangle model and Dell type solution and put one set
-of phonemes in onset, another in nucleus, and another in coda. And have separate
-set of features for onset, nucleus, and coda.
-
-Getting double linkage between words because of the way the loop is built.
+The goal is to replicate Graff (2012)'s finding that more pereptible contrasts
+have more minimal pairs.
 """
 
 from numpy import genfromtxt
@@ -66,6 +17,8 @@ from numpy import array
 import random, os #, itertools
 import networkx as nx
 import matplotlib.pyplot as plt
+from PIL import Image
+import images2gif
 
 os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension-of-Graff-2012')
 
@@ -177,13 +130,13 @@ conceptX  = range( int(-conceptCount/2)  + 1, int(conceptCount/2)  + 1 )
 pos = dict()
 for node in phGraph0:
     if type(node)    == frozenset:
-            pos[node] = array([wordX.pop() *2, wordY.pop()])
+            pos[node] = array([wordX.pop()    * 4, wordY.pop()])
     elif type(node)  == int:
-            pos[node] = array([conceptX.pop(), conceptY])
+            pos[node] = array([conceptX.pop() * 3, conceptY])
     elif node in distFeatData[0][1:]:
-            pos[node] = array([featureX.pop(), featureY])
+            pos[node] = array([featureX.pop() * 3, featureY])
     else:
-            pos[node] = array([phonemeX.pop(), phonemeY])
+            pos[node] = array([phonemeX.pop() * 3, phonemeY])
 
 #nx.draw_networkx(phGraph0,
 #            pos,
@@ -231,12 +184,14 @@ for currGen in range(nGens):
             for index, currNode in enumerate(phGraph0):
                 activations[index] = phGraph0.node[currNode]['activation']
             
+            #print activations
+            
             wordX     = range( int(-len(wordList)/2), int(len(wordList)/2) + 2 )
-            wordY    = [3.5, 4.5] * len(wordList) # this will be longer than it needs to be
+            wordY     = [3.5, 4.5] * len(wordList) # this will be longer than it needs to be
 
             for node in phGraph0:
                 if type(node)    == frozenset:
-                        pos[node] = array([wordX.pop() *2, wordY.pop()])
+                        pos[node] = array([wordX.pop() * 4, wordY.pop()])
             """
             nx.draw_networkx(phGraph0,
                         pos,
@@ -247,11 +202,33 @@ for currGen in range(nGens):
             """
             plt.clf() # in case it wasn't already closed before??
             
+            # super clunky code to extract target nodes (concepts down to features)
+            # and then change node_sizes to make those nodes bigger
+            
+            nodes = phGraph0.nodes()
+            specNodes = [currCon]
+            for specNode1 in phGraph0.neighbors(currCon):
+                specNodes.append(specNode1)
+                for specNode2 in phGraph0.neighbors(specNode1):
+                    if phGraph0.node[specNode2]['rank'] == 1:
+                        specNodes.append(specNode2)
+                        for specNode3 in phGraph0.neighbors(specNode2):
+                            if phGraph0.node[specNode3]['rank'] == 0:
+                                specNodes.append(specNode3)
+            specNodes = set(specNodes)
+            node_sizes = [1000] * len(nodes)
+            for index, node in enumerate(nodes):
+                if node in specNodes:
+                    node_sizes[index] = 2000
+            
             nx.draw_networkx_nodes(phGraph0,
                        pos,
+                       #nodelist = nodes,
                        node_color= activations, # not sure if I have to convert activations to points on some color scale
-                       node_size=1000,
+                       node_size=node_sizes,
                        cmap = 'YlOrRd',
+                       vmin = -10,
+                       vmax = 10,
                        alpha=0.9)
             nx.draw_networkx_labels(phGraph0,
                        pos)
@@ -265,12 +242,15 @@ for currGen in range(nGens):
             nx.draw_networkx_edges(phGraph0,
                        pos,
                        edgelist=pltEdges,
-                       alpha = .9)
-                                   
-            filename = 'net acts gen= {} con= {} t= {}.png'.format(currGen, currCon, currStep)
+                       alpha = .3)
+         
+            plt.text(-28,2,"currStep: {}".format(currStep), fontsize = 30)
+            plt.text(-28,1,"currGen: {}".format(currGen), fontsize = 30)
+                                                                                                                  
+            filename = 'net acts gen= {} con= {} t= {} with background.png'.format(currGen, currCon, currStep)
             fig = plt.gcf()
             fig.set_size_inches(18.5,10.5)
-            plt.axis('off')
+            #plt.axis('off') # comment this off for making gifs/animations, keep it on for regular images for ppt, etc.
             plt.savefig(filename,bbox_inches='tight')
             plt.clf() # close the figure so we don't keep writing on the same fig every iter of loop!
             
@@ -337,3 +317,12 @@ plt.ylabel('Average similarity between words', fontsize=24)
 #plt.plot(minPairCount)
 plt.show()
 """
+
+# make sure the directory below is right....this part should probably be in its 
+# own file...
+
+os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension-of-Graff-2012/network activation diagrams/images-for-animation')
+files = os.listdir('.')
+files = [f for f in files if f[-3:] == 'png']
+images = [Image.open(file) for file in files]    
+images2gif.writeGif('animation.gif',images, duration=1.0, dither=0)
