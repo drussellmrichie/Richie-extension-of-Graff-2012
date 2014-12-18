@@ -24,6 +24,11 @@ os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension
 
 # Set some parameters
 
+class prettyfrozenset(frozenset):
+    def __str__(self):
+        initial = super(prettyfrozenset, self).__str__()
+        return initial[initial.index("(") + 1:-1]
+
 conceptCount = 10 # do we need more concepts and hence words so that the 
                   # word-form space is a bit more crowded and hence we might find
                   # anti-minimal pair effects?                  
@@ -67,13 +72,13 @@ def newActivation(weightj, prevAct, netInputs, decay):
 def initWords(phonemes,conceptCount,wordLengths):
     newWords = []
     for _ in range(conceptCount):
-        newWords.append(frozenset(random.sample(phonemes, wordLengths))) # must be frozen (hashable) so networkx can make nodes out of words
+        newWords.append(prettyfrozenset(random.sample(phonemes, wordLengths))) # must be frozen (hashable) so networkx can make nodes out of words
     #for _ in range(wordCount):
     #    newWords.append([random.choice(phonemes) for _ in range(wordLengths)])
     return newWords
 
 def coinOneSyn(phonemes,wordLengths):
-    return frozenset(random.sample(phonemes, wordLengths))
+    return prettyfrozenset(random.sample(phonemes, wordLengths))
 
 # initialize the phonemes and word list
 
@@ -129,7 +134,7 @@ conceptX  = range( int(-conceptCount/2)  + 1, int(conceptCount/2)  + 1 )
 
 pos = dict()
 for node in phGraph0:
-    if type(node)    == frozenset:
+    if type(node)    == prettyfrozenset:
             pos[node] = array([wordX.pop()    * 4, wordY.pop()])
     elif type(node)  == int:
             pos[node] = array([conceptX.pop() * 3, conceptY])
@@ -190,7 +195,7 @@ for currGen in range(nGens):
             wordY     = [3.5, 4.5] * len(wordList) # this will be longer than it needs to be
 
             for node in phGraph0:
-                if type(node)    == frozenset:
+                if type(node)    == prettyfrozenset:
                         pos[node] = array([wordX.pop() * 4, wordY.pop()])
             """
             nx.draw_networkx(phGraph0,
@@ -236,7 +241,7 @@ for currGen in range(nGens):
             edges = phGraph0.edges()
             pltEdges = []
             for edge in edges:
-                if type(edge[0]) != frozenset or type(edge[1]) != frozenset:
+                if type(edge[0]) != prettyfrozenset or type(edge[1]) != prettyfrozenset:
                     pltEdges.append(edge)
                        
             nx.draw_networkx_edges(phGraph0,
