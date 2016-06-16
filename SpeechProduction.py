@@ -326,8 +326,8 @@ plt.show()
 # make sure the directory below is right....this part should probably be in its 
 # own file...
 
-os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension-of-Graff-2012/network activation diagrams/images-for-animation')
+os.chdir('/Users/russellrichie/Richie extension of Graff (2012)/Richie-extension-of-Graff-2012/network activation diagrams/sim1')
 files = os.listdir('.')
 files = [f for f in files if f[-3:] == 'png']
 images = [Image.open(file) for file in files]    
-images2gif.writeGif('animation.gif',images, duration=1.0, dither=0)
+images2gif.writeGif('networkAnimationDynamics.gif',images, duration=2.0, dither=0)
